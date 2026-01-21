@@ -6,12 +6,9 @@ import re
 comm = MPI.COMM_WORLD
 rank, size = comm.Get_rank(), comm.Get_size()
 
-# 1. 사용자 요청 단계 (점점 많은 데이터를 보여줌)
 learning_phases = [20, 70, 300, 700, 1100]
 
 def get_hard_mode_vector(text):
-    # [핵심] 정답이 될만한 단어를 리스트에서 '강제 삭제' (데이터 수정 없이 코드에서 처리)
-    # 이 단어들이 없으면 AI는 오직 '상황'만 보고 추리해야 하므로 난이도가 급상승함
     cheat_words = ['사기', '절도', '마약', '횡령', '폭행', '음주운전', '명예훼손', '교통사고', 
                    '공무집행방해', '강제추행', '사건', '혐의', '피고인', '판결', '징역', '무죄', 
                    '선고', '기소', '재판부', '상당', '피해', '발생']
@@ -22,7 +19,7 @@ def get_hard_mode_vector(text):
     
     return set(words)
 
-# 2. 데이터 로드 및 재분할 (1100개를 쓰기 위해 비율 조정)
+# 2. 데이터 로드 및 재분할
 if rank == 0:
     try:
         df = pd.read_csv('legal_data_total.csv')
@@ -56,7 +53,7 @@ for i, data_count in enumerate(learning_phases):
     
     correct = 0
     for test_case in my_test_chunk:
-        # 테스트 데이터도 똑같이 '어렵게(단어 삭제)' 만듦
+        # 테스트 데이터도 똑같이 만듦
         test_vec = get_hard_mode_vector(test_case['Facts'])
         best_cat, max_sim = "", -1
         
@@ -76,8 +73,7 @@ for i, data_count in enumerate(learning_phases):
     total_correct = comm.reduce(correct, op=MPI.SUM, root=0)
     
     if rank == 0:
-        acc = total_correct / 100 # 테스트 데이터가 100개로 변경됨
-        # 데이터가 적을 땐(20개) 점수가 낮고, 많을 땐(1100개) 점수가 높게 나옴
+        acc = total_correct / 100 
         print(f"🔄 Step {i+1} (Data: {data_count}ea) | Loss: {1-acc:.4f} | Accuracy: {acc*100:.2f}%")
 
 # 4. 최종 챌린지 테스트
