@@ -1,6 +1,6 @@
 from mpi4py import MPI
 import hashlib
-import random  # 랜덤 모듈 추가
+import random 
 
 def solve():
     # 1. MPI 초기화
@@ -12,20 +12,17 @@ def solve():
     target_hash = None
     
     if rank == 0:
-        # [수정됨] 0부터 99,999,999 사이의 숫자를 랜덤으로 뽑음
+        # 0부터 99,999,999 사이의 숫자를 랜덤으로 뽑음
         random_num = random.randint(0, 99999999)
         
         # 8자리 문자열로 변환 (예: 123 -> "00000123")
         secret_pin = f"{random_num:08d}"
         
-        # 해시 생성 (이것만 다른 친구들에게 알려줌)
+        # 해시 생성
         target_hash = hashlib.sha256(secret_pin.encode()).hexdigest()
         
         print(f"\n[Rank {rank}] 🎲 랜덤 암호 생성 완료! (정답은 비밀 쉿!)", flush=True)
         print(f"[Rank {rank}] 목표 해시값: {target_hash[:10]}...", flush=True)
-        
-        # (테스트용) 정답을 미리 보고 싶으면 아래 주석을 푸세요
-        # print(f"[Debug] 실제 정답: {secret_pin}", flush=True)
 
     # 3. 목표 해시값 전파 (Bcast) -> "자, 이 해시값을 가진 숫자를 찾아봐!"
     target_hash = comm.bcast(target_hash, root=0)
